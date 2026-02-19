@@ -1,5 +1,4 @@
 import re
-from tokenize import String
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from typing import Optional
 
@@ -29,6 +28,10 @@ class User(BaseModel):
 
     class Config:
         orm_mode = True
+
+class VerifyOTP(BaseModel):
+    email: EmailStr
+    otp: str
 
 class FoodItemcCreate(BaseModel):
     name: str

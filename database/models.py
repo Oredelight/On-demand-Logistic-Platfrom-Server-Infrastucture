@@ -12,7 +12,7 @@ class User(Base):
     hashed_password = Column(String)
     referral_code = Column(String, unique=True, index=True, default= generate_referral_code())
     referred_by_user_id = Column(String, ForeignKey("users.id"), nullable=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
 
     referred_by = relationship("User", remote_side=[id], backref="referrals")
 
