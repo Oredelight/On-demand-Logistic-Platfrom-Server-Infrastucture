@@ -114,6 +114,7 @@ def create_user(db: Session, user: User):
     phone_number=user.phone_number,
     referral_code=user.referral_code,
     hashed_password=hashed_password,
+    role=user.role,
     referred_by_user_id=referred_by_id
     )
 
