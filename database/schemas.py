@@ -7,6 +7,7 @@ class UserCreate(BaseModel):
     phone_number: Optional[str] = None
     referral_code: Optional[str] = None
     password: str = Field(min_length= 8, max_length= 72)
+    role: Optional[str] = "user"
 
     @model_validator(mode="before")
     def validate_email_or_phone(values: any) -> any:
@@ -33,6 +34,14 @@ class VerifyOTP(BaseModel):
     email: EmailStr
     otp: str
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+    role: Optional[str] = None  
+    
 class FoodItemcCreate(BaseModel):
     name: str
     description: Optional[str] = None
