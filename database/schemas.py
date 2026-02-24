@@ -1,13 +1,18 @@
 import re
+from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from typing import Optional
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    CUSTOMER = "customer"
 
 class UserCreate(BaseModel):
     email: Optional[EmailStr] = None
     phone_number: Optional[str] = None
     referral_code: Optional[str] = None
     password: str = Field(min_length= 8, max_length= 72)
-    role: Optional[str] = "user"
+    role: Optional[UserRole] = UserRole.CUSTOMER
 
     @model_validator(mode="before")
     def validate_email_or_phone(values: any) -> any:
@@ -37,6 +42,7 @@ class VerifyOTP(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    role: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None

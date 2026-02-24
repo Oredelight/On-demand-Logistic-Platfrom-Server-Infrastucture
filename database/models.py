@@ -2,6 +2,7 @@ from utils.referral import generate_referral_code
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from database.db import Base
+from database.schemas import UserRole
 
 class User(Base):
     __tablename__ = "users"
@@ -10,7 +11,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     phone_number = Column(String, unique=True, index=True)  
     hashed_password = Column(String)
-    role = Column(String, default="user")
+    role = Column(String, default= UserRole.CUSTOMER.value)
     referral_code = Column(String, unique=True, index=True, default= generate_referral_code())
     referred_by_user_id = Column(String, ForeignKey("users.id"), nullable=True)
     is_active = Column(Boolean, default=False)

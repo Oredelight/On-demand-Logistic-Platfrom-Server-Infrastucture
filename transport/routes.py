@@ -23,9 +23,8 @@ def verify_email(data: VerifyOTP, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = get_user_by_email_or_phone(db, email=user.email)
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not verify_password(user.password, existing_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid password")
+    if not existing_user or not verify_password(user.password, existing_user.hashed_password):
+        raise HTTPException(status_code=404, detail="User not found or incorrect password")
+    
     access_token = create_access_token(data={"sub": existing_user.email, "role": existing_user.role})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": existing_user.role}
