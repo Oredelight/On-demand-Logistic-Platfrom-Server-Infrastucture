@@ -37,17 +37,33 @@ class FoodItem(Base):
     carts = relationship("Cart", back_populates="food_item")
     orders = relationship("Order", back_populates="food_item")
     ratings = relationship("Rating", back_populates="food_item")
+    cart_items = relationship("CartItem", back_populates="food_item")
 
 class Cart(Base):
     __tablename__ = "carts"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     food_item_id = Column(Integer, ForeignKey("food_items.id"))
     quantity = Column(Integer)
 
     user = relationship("User", back_populates="carts")
     food_item = relationship("FoodItem", back_populates="carts")
+    cart_items = relationship("CartItem", back_populates="cart")
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cart_id = Column(Integer, ForeignKey("carts.id"))
+    food_item_id = Column(Integer, ForeignKey("food_items.id"))
+    quantity = Column(Integer)
+    protein = Column(String, nullable=True)
+    extras = Column(String, nullable=True)
+    instructions = Column(String, nullable=True)
+
+    cart = relationship("Cart", back_populates="cart_items")
+    food_item = relationship("FoodItem", back_populates="cart_items")
 
 class Order(Base):
     __tablename__ = "orders"

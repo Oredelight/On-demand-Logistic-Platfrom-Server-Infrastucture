@@ -62,13 +62,12 @@ class FoodItem(BaseModel):
     class Config:
         orm_mode = True
 
-class CartItemCreeate(BaseModel):
+class CartItemCreate(BaseModel):
     food_item_id: int
     quantity: int
-
-class CartItem(BaseModel):
-    id: int
-    user_id: int
+    protein: Optional[str] = None
+    extras: Optional[str] = None
+    instructions: Optional[str] = None
 
     class Config:
         orm_mode = True
