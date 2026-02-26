@@ -59,11 +59,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
-def require_admin(current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin only")
-    return current_user
-
 def customer_only(user: User = Depends(get_current_user)):
     if user.role != UserRole.CUSTOMER:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden: Customers only")

@@ -1,7 +1,7 @@
 import re
 from enum import Enum
 from pydantic import BaseModel, EmailStr, Field, model_validator
-from typing import Optional
+from typing import List, Optional
 
 class UserRole(str, Enum):
     ADMIN = "admin"
@@ -27,13 +27,6 @@ class UserCreate(BaseModel):
                         raise ValueError("Invalid phone number format.")
                 
         return values
-   
-class User(BaseModel):
-    id: int
-    is_active: bool
-
-    class Config:
-        orm_mode = True
 
 class VerifyOTP(BaseModel):
     email: EmailStr
@@ -48,69 +41,33 @@ class TokenData(BaseModel):
     email: Optional[str] = None
     role: Optional[str] = None  
     
-class FoodItemcCreate(BaseModel):
+class FoodItemCreate(BaseModel):
     name: str
-    description: Optional[str] = None
-    quantity: int
+    description: str
     price: float
-    available: bool
 
-class FoodItem(BaseModel):
-    id: int
-    owner_id: int
-
-    class Config:
-        orm_mode = True
+class FoodItemUpdate(BaseModel):
+    item_name: str | None = None
+    description: str | None = None
+    price: float | None = None
+    available: bool | None = None
 
 class CartItemCreate(BaseModel):
     food_item_id: int
     quantity: int
-    protein: Optional[str] = None
-    extras: Optional[str] = None
+    protein_id: Optional[int] = None
+    extras_id: Optional[List[int]] = []
     instructions: Optional[str] = None
 
     class Config:
         orm_mode = True
 
-class OrderCreate(BaseModel):
-    food_item_id: int
-    quantity: int
-    total_price: float
-    current_status: Optional[str] = "pending"
+class OrderStatus(str, Enum):
+    PENDING = "Pending"
+    PROCESSING = "Processing"
+    SHIPPED = "Shipped"
+    DELIVERED = "Delivered"
+    CANCELLED = "Cancelled"
 
-class Order(BaseModel):
-    id: int
-    user_id: int
-    status: str
-
-    class Config:
-        orm_mode = True
-
-class OrderStatusLogCreate(BaseModel):
-    order_id: int
-    old_status: str
-    new_status: str
-    timestamp: str    
-
-class OrderStatusLog(BaseModel):
-    id: int
-    order_id: int
-    old_status: str
-    new_status: str
-    timestamp: str
-
-    class Config:
-        orm_mode = True
-
-class RatingCreate(BaseModel):
-    food_item_id: int
-    rating: int
-    comment: Optional[str] = None  
-
-class Rating(BaseModel):
-    id: int
-    user_id: int
-
-    class Config:
-        orm_mode = True
-
+class UpdateOrderStatusRequest(BaseModel):
+    new_status: str  
