@@ -39,18 +39,30 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
-    role: Optional[str] = None  
+    role: Optional[str] = None 
     
 class FoodItemCreate(BaseModel):
     name: str
     description: str
     price: float
 
+class ProteinCreate(BaseModel):
+    name: str
+    price: float
+
+class ExtrasCreate(BaseModel):
+    name: str
+    price: float
+
+
 class FoodItemUpdate(BaseModel):
-    item_name: str | None = None
-    description: str | None = None
-    price: float | None = None
-    available: bool | None = None
+    name: str 
+    description: str
+    price: float 
+    available: bool
+
+    class Config:
+        from_attributes = True
 
 class CartItemCreate(BaseModel):
     food_item_id: int
@@ -58,9 +70,6 @@ class CartItemCreate(BaseModel):
     protein_id: Optional[int] = None
     extras_id: Optional[List[int]] = []
     instructions: Optional[str] = None
-
-    class Config:
-        orm_mode = True
 
 class OrderStatus(str, Enum):
     PENDING = "Pending"

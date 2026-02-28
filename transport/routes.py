@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from database.db import get_db
 from database.models import User
-from database.schemas import User, CartItemCreate, FoodItemCreate, FoodItemUpdate, UpdateOrderStatusRequest, UserCreate, VerifyOTP, Token, OrderStatus
-from handlers.admins import add_food_item, get_all_orders, mark_food_item_availability, require_admin, update_food_item, update_order_status
+from database.schemas import CartItemCreate, ExtrasCreate, FoodItemCreate, FoodItemUpdate, ProteinCreate, UpdateOrderStatusRequest, UserCreate, VerifyOTP, Token
+from handlers.admins import add_extras, add_food_item, add_protein, get_all_orders, mark_food_item_availability, require_admin, update_food_item, update_order_status
 from handlers.food import clear_cart, fetch_food_items, add_to_cart, get_order_by_id, place_order
 from handlers.user import create_access_token, create_user, get_user_by_email_or_phone, verify_password, verify_user_email, customer_only
 
@@ -32,7 +32,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": existing_user.email, "role": existing_user.role})
     return {"access_token": access_token, "token_type": "bearer", "role": existing_user.role}
 
-@router.get("/foods")
+@router.get("/foods", response_model=list[FoodItemCreate])
 def get_foods(db: Session = Depends(get_db)):
     return fetch_food_items(db)
 
@@ -44,7 +44,7 @@ def add_cart(cart_item: CartItemCreate, user: User = Depends(customer_only),db: 
         food_id=cart_item.food_item_id,
         quantity=cart_item.quantity,
         protein_id=cart_item.protein_id,
-        extras_ids=cart_item.extras_ids,
+        extras_ids=cart_item.extras_id,
         instructions=cart_item.instructions
     )
     return {
@@ -99,29 +99,48 @@ def fetch_order(order_id: int, db: Session = Depends(get_db), current_user: User
 def route_add_food(food: FoodItemCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
     food_item = add_food_item(
         db=db,
-        item_name=food.item_name,
+        name=food.name,
         description=food.description,
         price=food.price,
         owner_id=admin.id
     )
     return {"message": "Food item added", "food_id": food_item.id}
 
-@router.put("/admin/foods/{food_id}")
+@router.post("/admin/proteins")
+def route_add_protein(protein: ProteinCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    protein = add_protein(
+        db=db,
+        name=protein.name,
+        price=protein.price,
+        owner_id=admin.id
+    )
+    return {"message": "Protein added", "protein_id": protein.id}
+
+@router.post("/admin/extras")
+def route_add_extras(extras: ExtrasCreate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+    extras = add_extras(
+        db=db,
+        name=extras.name,
+        price=extras.price
+    )
+    return {"message": "Extras added", "extras_id": extras.id}
+
+@router.put("/admin/foods/{food_id}", response_model=FoodItemUpdate)
 def route_update_food(food_id: int, food_update: FoodItemUpdate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    food_item = update_food_item(
+    food = update_food_item(
         db=db,
         food_item_id=food_id,
-        item_name=food_update.item_name,
+        name=food_update.name,
         description=food_update.description,
         price=food_update.price,
         available=food_update.available
     )
-    return {"message": "Food item updated", "food": food_item}
+    return food
 
-@router.patch("/admin/foods/{food_id}/availability")
+@router.patch("/admin/foods/{food_id}/availability", response_model=FoodItemUpdate)
 def route_mark_availability(food_id: int, available: bool, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
-    food_item = mark_food_item_availability(db=db, food_item_id=food_id, available=available)
-    return {"message": f"Food item {'available' if available else 'unavailable'}", "food": food_item}
+    food = mark_food_item_availability(db=db, food_item_id=food_id, available=available)
+    return food
 
 @router.get("/admin/orders")
 def route_get_all_orders(db: Session = Depends(get_db), admin: User = Depends(require_admin)):

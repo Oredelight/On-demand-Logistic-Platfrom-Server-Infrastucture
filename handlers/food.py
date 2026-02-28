@@ -39,21 +39,13 @@ def add_to_cart(
         if not protein:
             raise HTTPException(status_code=404, detail="Protein not found")
 
-        if protein not in food.proteins:
-            raise HTTPException(
-                status_code=400,
-                detail="This protein is not allowed for this food"
-            )
-
         protein_price = protein.price
 
     extras_price = 0
     extras_objects = []
 
     if extras_ids:
-        extras_objects = db.query(Extra).filter(
-            Extra.id.in_(extras_ids)
-        ).all()
+        extras_objects = db.query(Extra).filter(Extra.id.in_(extras_ids)).all()
 
         extras_price = sum(extra.price for extra in extras_objects)
 
