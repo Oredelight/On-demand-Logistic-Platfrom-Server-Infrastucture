@@ -4,7 +4,7 @@ from database.db import get_db
 from database.models import User
 from database.schemas import CartItemCreate, ExtrasCreate, FoodItemCreate, FoodItemUpdate, ProteinCreate, UpdateOrderStatusRequest, UserCreate, VerifyOTP, Token
 from handlers.admins import add_extras, add_food_item, add_protein, get_all_orders, mark_food_item_availability, require_admin, update_food_item, update_order_status
-from handlers.food import clear_cart, fetch_food_items, add_to_cart, get_order_by_id, place_order
+from handlers.food import clear_cart, fetch_extras, fetch_food_items, add_to_cart, fetch_proteins, get_order_by_id, place_order
 from handlers.user import create_access_token, create_user, get_user_by_email_or_phone, verify_password, verify_user_email, customer_only
 
 router = APIRouter()
@@ -36,6 +36,14 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
 def get_foods(db: Session = Depends(get_db)):
     return fetch_food_items(db)
 
+@router.get("/proteins", response_model=list[ProteinCreate])
+def get_proteins(db: Session = Depends(get_db)):
+    return fetch_proteins(db=db)
+
+@router.get("/extras", response_model=list[ExtrasCreate])
+def get_extras(db: Session = Depends(get_db)):
+    return fetch_extras(db=db)
+
 @router.post("/cart/add")
 def add_cart(cart_item: CartItemCreate, user: User = Depends(customer_only),db: Session = Depends(get_db)):
     item = add_to_cart(
@@ -50,8 +58,9 @@ def add_cart(cart_item: CartItemCreate, user: User = Depends(customer_only),db: 
     return {
         "message": "Item added to cart",
         "cart_item_id": item.id,
-        "food": item.food.name,
+        "food": item.food_item.name,
         "protein": item.protein.name if item.protein else None,
+        "extras": [e.name for e in item.extras],
         "quantity": item.quantity,
         "unit_price": item.unit_price,
         "subtotal": item.subtotal
@@ -77,16 +86,16 @@ def create_order(
         "service_fee": order.service_fee,
         "tax": order.tax,
         "total": order.total,
-        "instructions": order.instructions,
+        "instructions": order.special_instructions,
         "items": [
             {
-                "food": item.food.name,
+                "food": item.food_item.name,
                 "protein": item.protein.name if item.protein else None,
                 "extras": [e.name for e in item.extras],
                 "unit_price": item.unit_price,
                 "quantity": item.quantity,
                 "item_total": item.subtotal
-            } for item in order.items
+            } for item in order.order_items
         ],
         "created_at": order.created_at
     }

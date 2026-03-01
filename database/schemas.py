@@ -43,7 +43,7 @@ class TokenData(BaseModel):
     
 class FoodItemCreate(BaseModel):
     name: str
-    description: str
+    description: Optional[str] = None
     price: float
 
 class ProteinCreate(BaseModel):

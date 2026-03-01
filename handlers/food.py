@@ -54,7 +54,7 @@ def add_to_cart(
 
     cart_item = CartItem(
         cart_id=cart.id,
-        food_id=food.id,
+        food_item_id=food.id,
         protein_id=protein.id if protein else None,
         quantity=quantity,
         unit_price=unit_price,
@@ -69,6 +69,12 @@ def add_to_cart(
     db.refresh(cart_item)
 
     return cart_item
+
+def fetch_proteins(db: Session):
+    return db.query(Protein).all()
+
+def fetch_extras(db: Session):
+    return db.query(Extra).all()
 
 def clear_cart(db: Session, user_id: int):
     cart = db.query(Cart).filter_by(user_id=user_id).first()
@@ -88,7 +94,7 @@ def calculate_cart_subtotal(cart: Cart):
     return subtotal
 
 def place_order(db: Session, user: User, instructions: str = None):
-    cart = db.query(Cart).filter_by(user_id=user.id).first()
+    cart = db.query(Cart).filter_by(user_id=user.id, is_active=True).first()
     if not cart or not cart.cart_items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
@@ -107,7 +113,7 @@ def place_order(db: Session, user: User, instructions: str = None):
         service_fee=service_fee,
         tax=tax,
         total=total,
-        instructions=instructions
+        special_instructions=instructions
     )
     db.add(order)
     db.commit()
@@ -117,7 +123,7 @@ def place_order(db: Session, user: User, instructions: str = None):
     for item in cart.cart_items:
         order_item = OrderItem(
             order_id=order.id,
-            food_id=item.food_id,
+            food_item_id=item.food_item_id,
             protein_id=item.protein_id,
             quantity=item.quantity,
             unit_price=item.unit_price,
@@ -149,16 +155,16 @@ def get_order_by_id(db: Session, user_id: int, order_id: int):
         "service_fee": order.service_fee,
         "tax": order.tax,
         "total": order.total,
-        "instructions": order.instructions,
+        "instructions": order.special_instructions,
         "items": [
             {
-                "food": item.food.name,
+                "food": item.food_item.name,
                 "protein": item.protein.name if item.protein else None,
                 "extras": [e.name for e in item.extras],
                 "unit_price": item.unit_price,
                 "quantity": item.quantity,
                 "item_total": item.subtotal
-            } for item in order.items
+            } for item in order.order_items
         ],
         "created_at": order.created_at
     }

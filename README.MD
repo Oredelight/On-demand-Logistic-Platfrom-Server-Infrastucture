@@ -1,195 +1,295 @@
 # Food Ordering App
 
-A FastAPI‑based backend for a simple food ordering system.  
-Supports customer and admin roles, shopping cart, orders, referral codes, and email OTP verification.
+A FastAPI‑based backend powering a food‑ordering service. It supports multiple user roles, a configurable menu, shopping carts, order lifecycle management, referral codes, optional proteins/extras and email OTP verification. The project ships with a simple data‑migration mechanism to keep the SQLite schema in sync as new fields and tables are added.
+
+---
+
+## Table of Contents
+
+1. [Features](#features)  
+2. [Project structure](#project-structure)  
+3. [Tech stack](#tech-stack)  
+4. [Installation & setup](#installation--setup)  
+5. [Configuration](#configuration)  
+6. [Running & documentation](#running--documentation)  
+7. [Database schema & migrations](#database-schema--migrations)  
+8. [Authentication & authorization](#authentication--authorization)  
+9. [API reference](#api-reference)  
+10. [Validation rules](#validation-rules)  
+11. [Troubleshooting](#troubleshooting)  
+12. [Future enhancements](#future-enhancements)  
+13. [License](#license)
 
 ---
 
 ## Features
 
-- **User accounts**
-  - Sign up with email or phone
-  - Email verification via OTP stored in Redis
-  - JWT authentication (role included)
+### User management
 
-- **Customer**
-  - Browse food items
-  - Add to cart with proteins & extras
-  - View / clear cart
-  - Place orders (auto fees & tax)
-  - Track own orders
+- Register with **email** or **phone number** (one is required).
+- Email verification via one‑time password (OTP); codes stored in Redis.
+- JWT login with `role` claim (`customer` or `admin`).
+- Referral codes – each user gets an 8‑character UUID code; new users may
+  supply a referrer.
 
-- **Admin**
-  - Add/update food items
-  - Toggle availability
-  - View all orders
-  - Change order status
+### Customer‑side functionality
 
-- **Referral system**
-  - 8‑character UUID code generated for each user
-  - Link referral on signup
+- Browse **available food items**.
+- Browse optional **proteins** and **extras**.
+- Add items to a **cart** with customizable proteins, extras and instructions.
+- View and clear the cart.
+- Place orders; subtotal, delivery fee, service fee and tax calculated
+  automatically.
+- Track order status and view order details.
+
+### Administration
+
+- Create/update/delete food items.
+- Add new proteins and extras.
+- Toggle item availability.
+- View all orders with full line‑item details.
+- Update order status (`Pending`, `Processing`, `Shipped`, `Delivered`,
+  `Cancelled`).
+- Admin routes are protected; a valid JWT with `role == "admin"` is required.
+
+### Miscellaneous
+
+- Built‑in data migration tool (Alembic‑style scripts) keeps SQLite schema
+  up to date.
+- Detailed Pydantic schemas for automated request validation.
+- OTP TTL and JWT expiry configurable.
+- Referral system stored via `referred_by_user_id`.
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
-.
-├── main.py
-├── requirements.txt
+food-ordering-app/
+├── main.py                    # application entry point
+├── requirements.txt           # pip dependencies
+├── README.MD                  # this file
 ├── database/
-│   ├── db.py
-│   ├── models.py
-│   └── schemas.py
+│   ├── db.py                  # engine, session and migration helper
+│   ├── models.py              # SQLAlchemy ORM models
+│   ├── schemas.py             # request/response Pydantic models
+│   └── migrations/            # SQL migration scripts (versioned)
 ├── handlers/
-│   ├── admins.py
-│   ├── food.py
-│   └── user.py
+│   ├── user.py                # signup/login/verification/business logic
+│   ├── food.py                # cart, order and menu logic
+│   └── admins.py              # admin‑only operations
 ├── transport/
-│   └── routes.py
+│   └── routes.py              # FastAPI router definitions
 └── utils/
-    └── referral.py
+    ├── referral.py            # referral code generator
+    └── migrate.py             # helper to run migrations (optional)
 ```
-
-- `database/` contains SQLAlchemy models, Pydantic schemas, and DB setup.
-- `handlers/` holds business logic for users, food/cart, and admin operations.
-- `transport/routes.py` defines FastAPI endpoints.
-- `utils/referral.py` generates referral codes.
-- `main.py` creates the FastAPI app and includes routes.
 
 ---
 
-## 🛠️ Installation
+## Tech Stack
+
+- **Framework:** FastAPI  
+- **Database:** SQLite (default); SQLAlchemy ORM  
+- **Authentication:** JWT via `python-jose`  
+- **Password hashing:** Bcrypt (`passlib`)  
+- **OTP storage:** Redis  
+- **Validation:** Pydantic  
+- **Migrations:** lightweight script / Alembic  
+- **Server:** Uvicorn  
+
+---
+
+## Installation & setup
 
 ```bash
-git clone <repo-url>
+git clone <repository-url>
 cd food-ordering-app
 
+# create/activate venv
 python -m venv venv
-source venv/bin/activate      
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
 
 pip install -r requirements.txt
 ```
 
-Make sure a Redis server is running on `localhost:6379`:
+Start Redis (required for OTPs):
 
 ```bash
 redis-server
 ```
 
----
-
-## 🚀 Running
+Create/upgrade the database schema:
 
 ```bash
-uvicorn main:app --reload
+# simple helper included
+python database/migrate.py
+
+# or, if using alembic
+alembic upgrade head
 ```
 
-API docs available at:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+> The migration script reads SQL files in `database/migrations/` and applies
+> any that have not yet run.  Add a new file there whenever you alter models.
 
 ---
 
 ## Configuration
 
-- **Database**: SQLite by default (`food_ordering_app.db`).  
-  Change `SQLALCHEMY_DATABASE_URL` in [`database/db.py`](database/db.py).
+Most configurable values live in `handlers/user.py` and `database/db.py`.
+It is **strongly recommended** to load these from environment variables
+(via `python-dotenv`).
 
-- **JWT**:  
-  - `SECRET_KEY` in [`handlers/user.py`](handlers/user.py) – **change for production**.  
-  - `ACCESS_TOKEN_EXPIRE_MINUTES` default 60.
-
-- **Redis**: host/port in `handlers/user.py`.  
-  `OTP_TTL` is 300 seconds.
-
-> Recommended🫠: use `.env` and `python-dotenv` for sensitive values.
-
----
-
-## Dependencies
-
-See [`requirements.txt`](requirements.txt); key packages:
-
-- `fastapi`, `uvicorn`
-- `sqlalchemy`
-- `passlib[bcrypt]`
-- `python-jose`
-- `redis`
-- `pydantic`, `email-validator`
+| Setting                          | Location           | Default           | Notes                           |
+|----------------------------------|--------------------|-------------------|---------------------------------|
+| `SECRET_KEY`                     | `handlers/user.py` | `"YOUDONTKNOW..."`| change before production        |
+| `ALGORITHM`                      | `handlers/user.py` | `"HS256"`         |                                 |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`    | `handlers/user.py` | `60`              |                                 |
+| `OTP_TTL`                        | `handlers/user.py` | `300` (5 min)     | Redis key expiry                |
+| `SQLALCHEMY_DATABASE_URL`        | `database/db.py`   | `sqlite:///./food_ordering_app.db` | swap for other RDBMS |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` | `handlers/user.py` | `localhost,6379,0` |                       |
 
 ---
 
-## Database Schema (key tables)
+## Running & documentation
 
-- **users** – credentials, role, referral codes
-- **food_items** – catalogue
-- **carts / cart_items** – current user cart
+```bash
+uvicorn main:app --reload
+```
+
+Visit:
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+Endpoints are documented automatically using the Pydantic schemas.
+
+---
+
+## Database schema & migrations
+
+The application’s models are defined in `database/models.py`.  When you add or
+change a table/column you must also add a migration script under
+`database/migrations/` and run the migration helper before running the
+application.
+
+### Key tables
+
+- **users**: id, email, phone_number, hashed_password, role,
+  referral_code, referred_by_user_id, is_active
+- **food_items**: id, item_name, description, price, quantity, available,
+  owner_id
+- **proteins**: id, name, price, is_available
+- **extras**: id, name, price
+- **carts / cart_items**
 - **orders / order_items / order_status_logs**
-- **proteins / extras** – optional add‑ons
+
+Association (many‑to‑many) tables:
+
+- `food_proteins`, `cart_item_extras`, `order_item_extras`
+
+The helper script either issues `CREATE TABLE IF NOT EXISTS` statements or
+runs Alembic migrations; refer to its header comments for usage.
 
 ---
 
-## API Endpoints
+## Authentication & authorization
+
+The app uses OAuth2 password flow with bearer tokens.  Token payload:
+
+```json
+{
+  "sub": "<user email>",
+  "role": "customer" | "admin"
+}
+```
+
+`customer_only` and `require_admin` dependencies in `handlers/user.py`
+validate the token and, for `require_admin`, verify that `role == "admin"`.
+
+---
+
+## API reference
 
 ### Authentication
 
-| Verb | Path            | Description                  |
-|------|-----------------|------------------------------|
-| POST | `/signup`       | Register new user            |
-| POST | `/verify`       | Verify email OTP             |
-| POST | `/login`        | Obtain JWT token             |
+| Verb | Path      | Description                          |
+|------|-----------|--------------------------------------|
+| POST | `/signup` | Register new user (email/phone/pass) |
+| POST | `/verify` | Verify email with OTP                |
+| POST | `/login`  | Obtain JWT token                     |
 
-### Customer
+### Public customer endpoints
 
-| Verb | Path                    | Auth | Description                    |
-|------|-------------------------|------|--------------------------------|
-| GET  | `/foods`                | none | List available items           |
-| POST | `/cart/add`             | yes  | Add item to cart              |
-| DELETE| `/cart/clear`          | yes  | Empty cart                    |
-| POST | `/orders`               | yes  | Place order                   |
-| GET  | `/orders/{order_id}`    | yes  | Fetch own order details       |
+| Verb | Path                      | Auth | Description                               |
+|------|---------------------------|------|-------------------------------------------|
+| GET  | `/foods`                  | none | List available food items                 |
+| GET  | `/proteins`               | none | List available proteins                   |
+| GET  | `/extras`                 | none | List available extras                     |
 
-### Admin (require `role=admin` token)
+### Authenticated customer endpoints
 
-| Verb | Path                        | Description                   |
-|------|-----------------------------|-------------------------------|
-| POST | `/admin/foods`              | Add food item                 |
-| PUT  | `/admin/foods/{food_id}`    | Update food item              |
-| PATCH| `/admin/foods/{food_id}/availability` | Toggle availability |
-| GET  | `/admin/orders`             | List all orders               |
-| PATCH| `/admin/orders/{order_id}/status` | Change order status   |
+| Verb | Path                    | Description                            |
+|------|-------------------------|----------------------------------------|
+| POST | `/cart/add`             | Add item to cart                       |
+| DELETE| `/cart/clear`          | Clear current user’s cart              |
+| POST | `/orders`               | Place order from cart (query param `instructions` optional) |
+| GET  | `/orders/{order_id}`    | Retrieve own order details             |
 
-> All protected endpoints expect:
-> `Authorization: Bearer <JWT>`
+### Admin endpoints (`role=admin`)
 
----
+| Verb | Path                                    | Description                        |
+|------|-----------------------------------------|------------------------------------|
+| POST | `/admin/foods`                          | Create food item                   |
+| PUT  | `/admin/foods/{food_id}`                | Update food item                   |
+| PATCH| `/admin/foods/{food_id}/availability`   | Toggle availability                |
+| POST | `/admin/proteins`                       | Add protein option                 |
+| POST | `/admin/extras`                         | Add extra option                   |
+| GET  | `/admin/orders`                         | List all orders                    |
+| PATCH| `/admin/orders/{order_id}/status`       | Update order status                |
 
-## Validation Rules
-
-- **Email/Phone**: one required; phone must match `^\+?[1-9]\d{7,14}$`.
-- **Password**: 8–72 chars.
-- **Referral code**: validated at signup.
-- **Order status**: one of `Pending`, `Processing`, `Shipped`, `Delivered`, `Cancelled`.
-
----
-
-## Future Enhancements
-
-- Payment gateway, notifications (email/SMS)
-- Ratings/reviews, order history
-- Admin analytics, real‑time updates
-- Security & performance improvements
+**Headers:**  
+`Authorization: Bearer <JWT>`  
+If missing/invalid you receive `401`; if role insufficient you’ll get `403`.
 
 ---
 
-## Notes & Troubleshooting
+## Validation rules
 
-- OTP printed to console for dev.
-- Delete `food_ordering_app.db` to reset DB.
-- Redis connection errors → start server.
-- `SECRET_KEY` must be changed for production.
+- Email must be valid format; phone must match `^\+?[1-9]\d{7,14}$`.
+- Password 8–72 characters.
+- Referral code, if provided, must belong to an existing user.
+- Order status updates accept only the predefined enum values.
+
+Invalid input returns `400` with field‑specific messages generated by
+Pydantic and the handlers.
 
 ---
-Enjoy building with the Food Ordering App!
+
+## Troubleshooting
+
+- **Redis not running:** `ConnectionError` → start `redis-server`.
+- **DB locked:** close other connections, delete `food_ordering_app.db`.
+- **Missing migrations:** run `python database/migrate.py`.
+- **OTP not received:** check Redis connection; in development the code is
+  logged to console.
+- **JWT errors:** ensure `SECRET_KEY` is set and consistent between runs.
+
+---
+
+## Future enhancements
+
+- Payment gateway (Stripe/PayPal)
+- Email/SMS notifications
+- Ratings/reviews, order history, re‑order functionality
+- Admin analytics dashboard
+- Real‑time tracking (WebSockets)
+- Internationalization and push notifications
+- Security improvements (HTTPS, CORS, rate limiting, audit logs)
+
+---
+
+_Last updated: March 1st 2026 (v1.1.0)_

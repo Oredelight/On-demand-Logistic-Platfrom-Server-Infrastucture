@@ -84,16 +84,16 @@ def get_all_orders(db: Session):
             "service_fee": order.service_fee,
             "tax": order.tax,
             "total": order.total,
-            "instructions": order.instructions,
+            "instructions": order.special_instructions,
             "items": [
                 {
-                    "food": item.food.name,
+                    "food": item.food_item.name,
                     "protein": item.protein.name if item.protein else None,
                     "extras": [e.name for e in item.extras],
                     "unit_price": item.unit_price,
                     "quantity": item.quantity,
                     "item_total": item.subtotal
-                } for item in order.items
+                } for item in order.order_items
             ],
             "created_at": order.created_at
         })
