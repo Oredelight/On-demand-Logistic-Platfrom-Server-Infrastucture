@@ -1,2 +1,38 @@
-venv
-__pycache__
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Alembic
+# (migrations folder is committed, but not __pycache__ inside it)
+migrations/__pycache__/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+config.py
