@@ -58,7 +58,7 @@ def initiate_payment(db: Session, order_id: int, user: User) -> dict:
             "user_id": user.id,
             "app": settings.APP_NAME,
         },
-        "callback_url": f"{settings.PAYSTACK_BASE_URL}/callback",
+        "callback_url": f"{settings.FRONTEND_URL}/payment/callback",
     }
 
     try:

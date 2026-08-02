@@ -15,13 +15,18 @@ export default function ProfilePage() {
   const [newAddr, setNewAddr] = useState({ label: '', street: '', city: '', state: '', landmark: '' })
 
   useEffect(() => {
-    Promise.all([authApi.getProfile(), addressApi.list()])
-      .then(([pRes, aRes]) => {
+    // Fetch profile first — always works for any authenticated user
+    authApi.getProfile()
+      .then(pRes => {
         setProfile(pRes.data)
         setUser(pRes.data)
-        setAddresses(aRes.data)
       })
       .finally(() => setLoadingProfile(false))
+
+    // Fetch addresses separately — may 403 for admin (customer_only guard)
+    addressApi.list()
+      .then(aRes => setAddresses(aRes.data))
+      .catch(() => {}) // silently ignore if admin can't access
   }, [])
 
   const handleAddAddress = async () => {

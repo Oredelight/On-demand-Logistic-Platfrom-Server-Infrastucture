@@ -1,22 +1,9 @@
-"""
-Admin Seed Script
-=================
-Creates an admin user directly in the database.
-Run this from the project root:
-
-    python create_admin.py
-
-The account is immediately active (no OTP verification required).
-"""
-
 import sys
 import getpass
 
-# Force UTF-8 output so the script works on all Windows terminals
 if sys.stdout.encoding != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-# Make sure project root is on the path
 sys.path.insert(0, ".")
 
 from database.db import SessionLocal
@@ -62,7 +49,7 @@ def create_admin() -> None:
             email=email,
             hashed_password=get_password_hash(password),
             role=UserRole.ADMIN.value,
-            is_active=True,   # no OTP needed for seeded admins
+            is_active=True,   # no OTP needed for seeded admin
         )
         db.add(admin)
         db.commit()

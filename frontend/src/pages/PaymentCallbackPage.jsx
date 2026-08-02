@@ -3,16 +3,22 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle, XCircle, Loader } from 'lucide-react'
 import { paymentApi } from '../api'
+import { useCartStore } from '../store/cartStore'
 
 export default function PaymentCallbackPage() {
   const [params] = useSearchParams()
   const reference = params.get('reference')
   const [status, setStatus] = useState('verifying') // verifying | success | failed
+  const { clearItems } = useCartStore()
 
   useEffect(() => {
     if (!reference) { setStatus('failed'); return }
     paymentApi.verify(reference)
-      .then(r => setStatus(r.data.status === 'success' || r.data.payment_status === 'paid' ? 'success' : 'failed'))
+      .then(r => {
+        const paid = r.data.status === 'success' || r.data.payment_status === 'paid'
+        if (paid) clearItems()
+        setStatus(paid ? 'success' : 'failed')
+      })
       .catch(() => setStatus('failed'))
   }, [reference])
 

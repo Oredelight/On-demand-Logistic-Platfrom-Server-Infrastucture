@@ -126,14 +126,14 @@ def get_my_profile(current_user: User = Depends(get_active_user)):
 
 
 @router.get("/users/me/orders", tags=["Users"])
-def get_my_orders(current_user: User = Depends(customer_only), db: Session = Depends(get_db)):
+def get_my_orders(current_user: User = Depends(get_active_user), db: Session = Depends(get_db)):
     return get_user_orders(db, user_id=current_user.id)
 
 
 @router.post("/users/addresses", response_model=AddressResponse, status_code=201, tags=["Addresses"])
 def add_delivery_address(
     data: AddressCreate,
-    current_user: User = Depends(customer_only),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     return add_address(db, current_user, data)
@@ -141,7 +141,7 @@ def add_delivery_address(
 
 @router.get("/users/addresses", response_model=list[AddressResponse], tags=["Addresses"])
 def list_delivery_addresses(
-    current_user: User = Depends(customer_only),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     return get_user_addresses(db, current_user)
@@ -150,7 +150,7 @@ def list_delivery_addresses(
 @router.patch("/users/addresses/{address_id}/default", response_model=AddressResponse, tags=["Addresses"])
 def set_default_delivery_address(
     address_id: int,
-    current_user: User = Depends(customer_only),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     return set_default_address(db, current_user, address_id)
@@ -159,7 +159,7 @@ def set_default_delivery_address(
 @router.delete("/users/addresses/{address_id}", tags=["Addresses"])
 def remove_delivery_address(
     address_id: int,
-    current_user: User = Depends(customer_only),
+    current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
     return delete_address(db, current_user, address_id)
