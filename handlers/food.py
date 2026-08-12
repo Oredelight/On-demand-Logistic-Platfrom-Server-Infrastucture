@@ -209,8 +209,8 @@ def place_order(db: Session, user: User, instructions: str = None, delivery_addr
     # Send confirmation email via Celery
     if user.email:
         try:
-            from workers.tasks import send_order_confirmation_task
-            send_order_confirmation_task.delay(email=user.email, order_data=order_data)
+            from utils.email import send_order_confirmation
+            send_order_confirmation(to_email=user.email, order_data=order_data)
         except Exception as e:
             logger.error(f"[ORDER] Failed to dispatch order confirmation email: {e}")
 

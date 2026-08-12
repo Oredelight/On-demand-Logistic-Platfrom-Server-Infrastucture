@@ -84,11 +84,11 @@ def login(user: UserCreate, request: Request, db: Session = Depends(get_db)):
 
     if existing_user.email:
         try:
-            from workers.tasks import send_login_notification_task
+            from utils.email import send_login_notification
             ip = request.client.host if request.client else None
             login_time = datetime.utcnow().strftime("%d %b %Y, %H:%M UTC")
-            send_login_notification_task.delay(
-                email=existing_user.email,
+            send_login_notification(
+                to_email=existing_user.email,
                 login_time=login_time,
                 ip_address=ip
             )

@@ -219,11 +219,14 @@ def create_user(db: Session, user: UserCreate) -> User:
     if user.email:
         otp = store_email_otp(user.email)
         try:
-            from workers.tasks import send_otp_task
-            send_otp_task.delay(email=user.email, otp=otp, purpose="signup")
-            logger.info(f"[USER] OTP task dispatched for {user.email}")
+            from utils.email import send_otp_email
+            sent = send_otp_email(to_email=user.email, otp=otp, purpose="signup")
+            if sent:
+                logger.info(f"[USER] OTP sent synchronously to {user.email}")
+            else:
+                logger.warning(f"[USER] OTP send failed for {user.email}")
         except Exception as e:
-            logger.error(f"[USER] Failed to dispatch OTP task: {e}")
+            logger.error(f"[USER] Failed to send OTP synchronously: {e}")
 
     return db_user
 
@@ -254,7 +257,7 @@ def resend_otp(db: Session, email: str) -> None:
 
     otp = store_email_otp(email)
     try:
-        from workers.tasks import send_otp_task
-        send_otp_task.delay(email=email, otp=otp, purpose="resend")
+        from utils.email import send_otp_email
+        send_otp_email(to_email=email, otp=otp, purpose="resend")
     except Exception as e:
-        logger.error(f"[USER] Failed to dispatch resend OTP task: {e}")
+        logger.error(f"[USER] Failed to send resend OTP synchronously: {e}")

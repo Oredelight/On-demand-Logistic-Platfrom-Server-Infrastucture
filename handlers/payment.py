@@ -221,11 +221,11 @@ def handle_webhook(db: Session, payload: dict, raw_body: bytes, signature: str) 
 
             # Dispatch confirmation email via Celery task
             try:
-                from workers.tasks import send_payment_receipt_task, send_order_confirmation_task
+                from utils.email import send_payment_receipt
                 user = order.user
                 if user and user.email:
-                    send_payment_receipt_task.delay(
-                        email=user.email,
+                    send_payment_receipt(
+                        to_email=user.email,
                         payment_data={
                             "reference": payment.reference,
                             "order_id": order.id,

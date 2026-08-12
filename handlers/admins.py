@@ -115,12 +115,8 @@ def update_order_status(db: Session, order_id: int, new_status: str):
     user = order.user
     if user and user.email:
         try:
-            from workers.tasks import send_status_update_task
-            send_status_update_task.delay(
-                email=user.email,
-                order_id=order.id,
-                new_status=new_status
-            )
+            from utils.email import send_order_status_update
+            send_order_status_update(to_email=user.email, order_id=order.id, new_status=new_status)
         except Exception as e:
             logger.error(f"[ADMIN] Failed to dispatch status update email: {e}")
 
