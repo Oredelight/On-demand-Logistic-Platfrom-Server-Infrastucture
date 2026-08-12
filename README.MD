@@ -2,6 +2,8 @@
 
 DeliFoods is a full-stack food ordering platform with a FastAPI backend, a React/Vite frontend, JWT-based authentication, cart and order management, Paystack payments, and admin controls. The project is designed for local development first, with support for Redis-backed OTP flows, background email jobs, and a multi-role user experience.
 
+Check it out here: https://delifoods-frontend.onrender.com
+
 ## Overview
 
 This application allows customers to:
